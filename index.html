@@ -698,6 +698,7 @@
           <div class="view-toggle">
             <button class="view-btn active" onclick="setView('search','visual',this)">Visual</button>
             <button class="view-btn" onclick="setView('search','json',this)">JSON</button>
+            <button class="view-btn" onclick="setView('search','request',this)">Request</button>
           </div>
         </div>
         <div class="results-body" id="search-results">
@@ -727,6 +728,7 @@
           <div class="view-toggle">
             <button class="view-btn active" onclick="setView('property','visual',this)">Visual</button>
             <button class="view-btn" onclick="setView('property','json',this)">JSON</button>
+            <button class="view-btn" onclick="setView('property','request',this)">Request</button>
           </div>
         </div>
         <div class="results-body" id="property-results">
@@ -777,6 +779,7 @@
           <div class="view-toggle">
             <button class="view-btn active" onclick="setView('quote','visual',this)">Visual</button>
             <button class="view-btn" onclick="setView('quote','json',this)">JSON</button>
+            <button class="view-btn" onclick="setView('quote','request',this)">Request</button>
           </div>
         </div>
         <div class="results-body" id="quote-results">
@@ -838,6 +841,7 @@
           <div class="view-toggle">
             <button class="view-btn active" onclick="setView('cars','visual',this)">Visual</button>
             <button class="view-btn" onclick="setView('cars','json',this)">JSON</button>
+            <button class="view-btn" onclick="setView('cars','request',this)">Request</button>
           </div>
         </div>
         <div class="results-body" id="cars-results">
@@ -899,6 +903,7 @@
           <div class="view-toggle">
             <button class="view-btn active" onclick="setView('bundle','visual',this)">Visual</button>
             <button class="view-btn" onclick="setView('bundle','json',this)">JSON</button>
+            <button class="view-btn" onclick="setView('bundle','request',this)">Request</button>
           </div>
         </div>
         <div class="results-body" id="bundle-results">
@@ -916,8 +921,9 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let partnerKey = 'hts_demo_ent_001';
-  const viewState = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual' };
-  const lastData  = { search: null, property: null, quote: null, cars: null, bundle: null };
+  const viewState   = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual' };
+  const lastData    = { search: null, property: null, quote: null, cars: null, bundle: null };
+  const lastRequest = { search: null, property: null, quote: null, cars: null, bundle: null };
 
   let propertiesCache     = [];
   let hopperProductsCache = [];
@@ -1099,7 +1105,10 @@
   // ── Render dispatcher ──────────────────────────────────────────────────────
   function renderResults(tab, data) {
     const id = tab + '-results';
-    if (viewState[tab] === 'json') {
+    if (viewState[tab] === 'request') {
+      document.getElementById(id).innerHTML =
+        `<div class="json-view"><pre>${highlight(JSON.stringify(lastRequest[tab], null, 2))}</pre></div>`;
+    } else if (viewState[tab] === 'json') {
       document.getElementById(id).innerHTML =
         `<div class="json-view"><pre>${highlight(JSON.stringify(data, null, 2))}</pre></div>`;
     } else {
@@ -1319,16 +1328,18 @@
   async function doSearch() {
     showLoading('search-results');
     try {
+      const reqBody = {
+        destination: document.getElementById('search-destination').value,
+        check_in:    document.getElementById('search-checkin').value,
+        check_out:   document.getElementById('search-checkout').value,
+        guests:      parseInt(document.getElementById('search-guests').value),
+        sort:        document.getElementById('search-sort').value,
+      };
+      lastRequest.search = reqBody;
       const res = await fetch('/v1/lodging/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
-        body: JSON.stringify({
-          destination: document.getElementById('search-destination').value,
-          check_in:    document.getElementById('search-checkin').value,
-          check_out:   document.getElementById('search-checkout').value,
-          guests:      parseInt(document.getElementById('search-guests').value),
-          sort:        document.getElementById('search-sort').value,
-        }),
+        body: JSON.stringify(reqBody),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || res.statusText);
@@ -1340,6 +1351,7 @@
   async function doProperty() {
     showLoading('property-results');
     const propId = document.getElementById('property-id').value;
+    lastRequest.property = { property_id: propId };
     try {
       const res = await fetch(`/v1/lodging/properties/${propId}`, {
         headers: { Authorization: `Bearer ${partnerKey}` },
@@ -1354,16 +1366,18 @@
   async function doQuote() {
     showLoading('quote-results');
     try {
+      const reqBody = {
+        property_id:     document.getElementById('quote-property').value,
+        rate_id:         document.getElementById('quote-rate').value,
+        check_in:        document.getElementById('quote-checkin').value,
+        check_out:       document.getElementById('quote-checkout').value,
+        hopper_products: selectedHopperProducts('hopper-products-container'),
+      };
+      lastRequest.quote = reqBody;
       const res = await fetch('/v1/lodging/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
-        body: JSON.stringify({
-          property_id:     document.getElementById('quote-property').value,
-          rate_id:         document.getElementById('quote-rate').value,
-          check_in:        document.getElementById('quote-checkin').value,
-          check_out:       document.getElementById('quote-checkout').value,
-          hopper_products: selectedHopperProducts('hopper-products-container'),
-        }),
+        body: JSON.stringify(reqBody),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || res.statusText);
@@ -1375,16 +1389,18 @@
   async function doCarQuote() {
     showLoading('cars-results');
     try {
+      const reqBody = {
+        car_id:          document.getElementById('cars-car').value,
+        pickup_location: document.getElementById('cars-pickup').value,
+        pickup_date:     document.getElementById('cars-pickup-date').value,
+        dropoff_date:    document.getElementById('cars-dropoff-date').value,
+        hopper_products: selectedHopperProducts('car-hopper-container'),
+      };
+      lastRequest.cars = reqBody;
       const res = await fetch('/v1/cars/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
-        body: JSON.stringify({
-          car_id:          document.getElementById('cars-car').value,
-          pickup_location: document.getElementById('cars-pickup').value,
-          pickup_date:     document.getElementById('cars-pickup-date').value,
-          dropoff_date:    document.getElementById('cars-dropoff-date').value,
-          hopper_products: selectedHopperProducts('car-hopper-container'),
-        }),
+        body: JSON.stringify(reqBody),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || res.statusText);
@@ -1396,18 +1412,20 @@
   async function doBundleQuote() {
     showLoading('bundle-results');
     try {
+      const reqBody = {
+        property_id:     document.getElementById('bundle-property').value,
+        rate_id:         document.getElementById('bundle-rate').value,
+        car_id:          document.getElementById('bundle-car').value,
+        pickup_location: document.getElementById('bundle-pickup').value,
+        check_in:        document.getElementById('bundle-checkin').value,
+        check_out:       document.getElementById('bundle-checkout').value,
+        hopper_products: selectedHopperProducts('bundle-hopper-container'),
+      };
+      lastRequest.bundle = reqBody;
       const res = await fetch('/v1/bundle/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
-        body: JSON.stringify({
-          property_id:     document.getElementById('bundle-property').value,
-          rate_id:         document.getElementById('bundle-rate').value,
-          car_id:          document.getElementById('bundle-car').value,
-          pickup_location: document.getElementById('bundle-pickup').value,
-          check_in:        document.getElementById('bundle-checkin').value,
-          check_out:       document.getElementById('bundle-checkout').value,
-          hopper_products: selectedHopperProducts('bundle-hopper-container'),
-        }),
+        body: JSON.stringify(reqBody),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || res.statusText);
