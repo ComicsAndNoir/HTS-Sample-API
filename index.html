@@ -321,13 +321,31 @@
   let partnersCache       = [];   // populated by loadPartners()
 
   // ── Analytics ──────────────────────────────────────────────────────────────
-  const TAB_NAMES = {
-    search:   'search_hotels',
-    property: 'property_detail',
-    quote:    'hotel_quote',
-    cars:     'car_quote',
-    bundle:   'bundle_quote',
-    errors:   'error_responses',
+  const TAB_NAV_EVENTS = {
+    search:   'Search_Hotels_Navigate',
+    property: 'Property_Detail_Navigate',
+    quote:    'Hotel_Quote_Navigate',
+    cars:     'Car_Quote_Navigate',
+    bundle:   'Bundle_Quote_Navigate',
+    errors:   'Error_Responses_Navigate',
+  };
+
+  const TAB_LABEL = {
+    search:   'Search_Hotels',
+    property: 'Property_Detail',
+    quote:    'Hotel_Quote',
+    cars:     'Car_Quote',
+    bundle:   'Bundle_Quote',
+  };
+
+  const VIEW_LABEL = { visual: 'Visual', json: 'JSON', request: 'Request' };
+
+  const TIER_EVENTS = {
+    sandbox:    'Sandbox_Tier_Select',
+    self_serve: 'Self_Serve_Tier_Select',
+    standard:   'Standard_Tier_Select',
+    growth:     'Growth_Tier_Select',
+    enterprise: 'Enterprise_Tier_Select',
   };
 
   function ga(eventName, params) {
@@ -470,7 +488,7 @@
     document.querySelectorAll('.partner-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
     const partner = partnersCache.find(p => p.key === key);
-    ga('partner_select', { tier: partner?.tier ?? key, partner_name: partner?.name ?? key });
+    ga(TIER_EVENTS[partner?.tier] ?? 'Tier_Select');
   }
 
   function switchTab(name, el) {
@@ -478,7 +496,7 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
-    ga('tab_click', { tab_name: TAB_NAMES[name] ?? name });
+    ga(TAB_NAV_EVENTS[name] ?? 'Tab_Navigate');
   }
 
   function setView(tab, view, btn) {
@@ -490,7 +508,7 @@
     } else if (lastData[tab]) {
       renderResults(tab, lastData[tab]);
     }
-    ga('view_toggle', { tab_name: TAB_NAMES[tab] ?? tab, view_mode: view });
+    ga(`${TAB_LABEL[tab] ?? tab}_View_${VIEW_LABEL[view] ?? view}`);
   }
 
   function showLoading(id) {
@@ -1121,7 +1139,7 @@
         sort:        document.getElementById('search-sort').value,
       };
       lastRequest.search = reqBody;
-      ga('form_submit', { form_name: 'search_hotels', destination: reqBody.destination, sort: reqBody.sort });
+      ga('Search_Hotels_Submit', { destination: reqBody.destination, sort: reqBody.sort });
       const res = await fetch('/v1/lodging/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1138,7 +1156,7 @@
     showLoading('property-results');
     const propId = document.getElementById('property-id').value;
     lastRequest.property = { property_id: propId };
-    ga('form_submit', { form_name: 'property_detail', property_id: propId });
+    ga('Property_Detail_Submit', { property_id: propId });
     try {
       const res = await fetch(`/v1/lodging/properties/${propId}`, {
         headers: { Authorization: `Bearer ${partnerKey}` },
@@ -1161,7 +1179,7 @@
         hopper_products: selectedHopperProducts('hopper-products-container'),
       };
       lastRequest.quote = reqBody;
-      ga('form_submit', { form_name: 'hotel_quote', property_id: reqBody.property_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
+      ga('Hotel_Quote_Submit', { property_id: reqBody.property_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/lodging/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1185,7 +1203,7 @@
         hopper_products: selectedHopperProducts('car-hopper-container'),
       };
       lastRequest.cars = reqBody;
-      ga('form_submit', { form_name: 'car_quote', car_id: reqBody.car_id, pickup_location: reqBody.pickup_location, hopper_products: reqBody.hopper_products.join(',') || 'none' });
+      ga('Car_Quote_Submit', { car_id: reqBody.car_id, pickup_location: reqBody.pickup_location, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/cars/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1211,7 +1229,7 @@
         hopper_products: selectedHopperProducts('bundle-hopper-container'),
       };
       lastRequest.bundle = reqBody;
-      ga('form_submit', { form_name: 'bundle_quote', property_id: reqBody.property_id, car_id: reqBody.car_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
+      ga('Bundle_Quote_Submit', { property_id: reqBody.property_id, car_id: reqBody.car_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/bundle/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
