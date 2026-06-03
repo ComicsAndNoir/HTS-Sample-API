@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTS API Marketplace</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-B0Q7B13LCS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-B0Q7B13LCS', { page_location: 'https://hts-sample-api.onrender.com/' });
+  </script>
 </head>
 <body>
 
@@ -310,6 +318,21 @@
   let propertiesCache     = [];
   let hopperProductsCache = [];
   let carsCache           = {};   // { "Lisbon": [{car_id, supplier, ...}], ... }
+  let partnersCache       = [];   // populated by loadPartners()
+
+  // ── Analytics ──────────────────────────────────────────────────────────────
+  const TAB_NAMES = {
+    search:   'search_hotels',
+    property: 'property_detail',
+    quote:    'hotel_quote',
+    cars:     'car_quote',
+    bundle:   'bundle_quote',
+    errors:   'error_responses',
+  };
+
+  function ga(eventName, params) {
+    if (typeof gtag === 'function') gtag('event', eventName, params);
+  }
 
   // ── Hopper products ────────────────────────────────────────────────────────
   async function loadHopperProducts() {
@@ -446,6 +469,8 @@
     partnerKey = key;
     document.querySelectorAll('.partner-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+    const partner = partnersCache.find(p => p.key === key);
+    ga('partner_select', { tier: partner?.tier ?? key, partner_name: partner?.name ?? key });
   }
 
   function switchTab(name, el) {
@@ -453,6 +478,7 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
+    ga('tab_click', { tab_name: TAB_NAMES[name] ?? name });
   }
 
   function setView(tab, view, btn) {
@@ -464,6 +490,7 @@
     } else if (lastData[tab]) {
       renderResults(tab, lastData[tab]);
     }
+    ga('view_toggle', { tab_name: TAB_NAMES[tab] ?? tab, view_mode: view });
   }
 
   function showLoading(id) {
@@ -1042,6 +1069,7 @@
     try {
       const res  = await fetch('/v1/partners');
       const data = await res.json();
+      partnersCache = data.partners;
       const container = document.getElementById('partner-cards');
 
       container.innerHTML = data.partners.map(p => {
@@ -1093,6 +1121,7 @@
         sort:        document.getElementById('search-sort').value,
       };
       lastRequest.search = reqBody;
+      ga('form_submit', { form_name: 'search_hotels', destination: reqBody.destination, sort: reqBody.sort });
       const res = await fetch('/v1/lodging/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1109,6 +1138,7 @@
     showLoading('property-results');
     const propId = document.getElementById('property-id').value;
     lastRequest.property = { property_id: propId };
+    ga('form_submit', { form_name: 'property_detail', property_id: propId });
     try {
       const res = await fetch(`/v1/lodging/properties/${propId}`, {
         headers: { Authorization: `Bearer ${partnerKey}` },
@@ -1131,6 +1161,7 @@
         hopper_products: selectedHopperProducts('hopper-products-container'),
       };
       lastRequest.quote = reqBody;
+      ga('form_submit', { form_name: 'hotel_quote', property_id: reqBody.property_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/lodging/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1154,6 +1185,7 @@
         hopper_products: selectedHopperProducts('car-hopper-container'),
       };
       lastRequest.cars = reqBody;
+      ga('form_submit', { form_name: 'car_quote', car_id: reqBody.car_id, pickup_location: reqBody.pickup_location, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/cars/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
@@ -1179,6 +1211,7 @@
         hopper_products: selectedHopperProducts('bundle-hopper-container'),
       };
       lastRequest.bundle = reqBody;
+      ga('form_submit', { form_name: 'bundle_quote', property_id: reqBody.property_id, car_id: reqBody.car_id, hopper_products: reqBody.hopper_products.join(',') || 'none' });
       const res = await fetch('/v1/bundle/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
