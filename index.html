@@ -58,12 +58,12 @@
       white-space: nowrap;
     }
 
-    .partner-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+    .partner-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; flex: 1; min-width: 0; }
 
     .partner-card {
       border: 2px solid #e2e8f0;
       border-radius: 10px;
-      padding: 10px 18px;
+      padding: 10px 14px;
       cursor: pointer;
       transition: all 0.15s;
       background: white;
@@ -73,8 +73,9 @@
     .partner-card:hover { border-color: #90cdf4; }
     .partner-card.selected { border-color: #3182ce; background: #ebf8ff; }
 
-    .partner-card .name { font-size: 14px; font-weight: 600; color: #2d3748; }
-    .partner-card .meta { font-size: 12px; color: #718096; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .partner-card .name { font-size: 13px; font-weight: 600; color: #2d3748; }
+    .partner-card .meta { font-size: 11px; color: #718096; margin-top: 3px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .partner-card .desc { font-size: 11px; color: #a0aec0; margin-top: 5px; line-height: 1.45; }
 
     .badge {
       display: inline-block;
@@ -83,8 +84,11 @@
       font-size: 11px;
       font-weight: 600;
     }
-    .badge-enterprise { background: #faf5ff; color: #6b46c1; border: 1px solid #d6bcfa; }
+    .badge-sandbox    { background: #f7fafc; color: #718096; border: 1px solid #e2e8f0; }
+    .badge-selfserve  { background: #ebf8ff; color: #2b6cb0; border: 1px solid #90cdf4; }
     .badge-standard   { background: #fffaf0; color: #c05621; border: 1px solid #fbd38d; }
+    .badge-growth     { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+    .badge-enterprise { background: #faf5ff; color: #6b46c1; border: 1px solid #d6bcfa; }
 
     /* Tabs */
     .tabs { display: flex; gap: 4px; margin-bottom: 22px; flex-wrap: wrap; }
@@ -732,22 +736,7 @@
   <!-- Partner selector -->
   <div class="partner-bar">
     <span class="partner-label">Viewing as</span>
-    <div class="partner-cards">
-      <div class="partner-card selected" onclick="selectPartner('hts_demo_ent_001', this)">
-        <div class="name">Capital One Travel</div>
-        <div class="meta">
-          <span class="badge badge-enterprise">Enterprise</span>
-          4.0% take rate
-        </div>
-      </div>
-      <div class="partner-card" onclick="selectPartner('hts_demo_std_002', this)">
-        <div class="name">Acme Travel</div>
-        <div class="meta">
-          <span class="badge badge-standard">Standard</span>
-          7.0% take rate
-        </div>
-      </div>
-    </div>
+    <div id="partner-cards" class="partner-cards"></div>
   </div>
 
   <!-- Tabs -->
@@ -1028,7 +1017,7 @@
 
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
-  let partnerKey = 'hts_demo_ent_001';
+  let partnerKey = '';
   const viewState   = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual' };
   const lastData    = { search: null, property: null, quote: null, cars: null, bundle: null };
   const lastRequest = { search: null, property: null, quote: null, cars: null, bundle: null };
@@ -1744,10 +1733,64 @@
     }).join('');
   }
 
+  // ── Partners ───────────────────────────────────────────────────────────────
+  const TIER_BADGE = {
+    sandbox:    'badge-sandbox',
+    self_serve: 'badge-selfserve',
+    standard:   'badge-standard',
+    growth:     'badge-growth',
+    enterprise: 'badge-enterprise',
+  };
+
+  const TIER_LABEL = {
+    sandbox:    'Sandbox',
+    self_serve: 'Self-serve',
+    standard:   'Standard',
+    growth:     'Growth',
+    enterprise: 'Enterprise',
+  };
+
+  async function loadPartners() {
+    try {
+      const res  = await fetch('/v1/partners');
+      const data = await res.json();
+      const container = document.getElementById('partner-cards');
+
+      container.innerHTML = data.partners.map(p => {
+        const rateLabel = p.take_rate === 0
+          ? 'Free'
+          : `${(p.take_rate * 100 % 1 === 0
+              ? (p.take_rate * 100).toFixed(0)
+              : (p.take_rate * 100).toFixed(1))}% take rate`;
+        const badge = TIER_BADGE[p.tier] || 'badge-standard';
+        const label = TIER_LABEL[p.tier] || p.tier;
+        return `
+          <div class="partner-card" onclick="selectPartner('${p.key}', this)">
+            <div class="name">${p.name}</div>
+            <div class="meta">
+              <span class="badge ${badge}">${label}</span>
+              ${rateLabel}
+            </div>
+            <div class="desc">${p.description}</div>
+          </div>`;
+      }).join('');
+
+      // Select enterprise tier by default, fall back to last card
+      const defaultPartner =
+        data.partners.find(p => p.tier === 'enterprise') ||
+        data.partners[data.partners.length - 1];
+      partnerKey = defaultPartner.key;
+      container.querySelector(`[onclick*="${partnerKey}"]`).classList.add('selected');
+
+      // Now load supply data (needs partnerKey to be set first)
+      loadProperties();
+      loadHopperProducts();
+      loadCars();
+    } catch (e) { console.error('Failed to load partners:', e); }
+  }
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
-  loadProperties();
-  loadHopperProducts();
-  loadCars();
+  loadPartners();
   renderErrorTab();
 
   // ── API calls ──────────────────────────────────────────────────────────────

@@ -143,6 +143,24 @@ def health():
     return {"status": "ok", "service": "hts-marketplace-mock", "version": app.version}
 
 
+@app.get("/v1/partners", tags=["meta"])
+def list_partners():
+    """List all demo partner keys with their tier, commercial terms, and display metadata."""
+    return {
+        "partners": [
+            {
+                "key":         key,
+                "name":        p["partner_name"],
+                "tier":        p["tier"],
+                "take_rate":   p["take_rate"],
+                "model":       p["model"],
+                "description": p["description"],
+            }
+            for key, p in PARTNERS.items()
+        ]
+    }
+
+
 @app.get("/v1/products", tags=["products"])
 def list_products():
     """List available Hopper fintech products that can be added to a lodging quote."""

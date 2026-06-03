@@ -23,17 +23,40 @@ Pricing is in USD. EUR amounts converted at ~1.08 (approximate mid-2025 rate).
 # In production this is the Extranet / partner onboarding layer. Here the API key
 # both authenticates the partner AND determines their take-rate tier.
 PARTNERS = {
-    "hts_demo_ent_001": {
-        "partner_name": "Capital One Travel",
-        "tier": "enterprise",
-        "take_rate": 0.040,      # negotiated enterprise rate
-        "model": "platform_plus_variable",
+    "hts_demo_sbx_000": {
+        "partner_name": "Sandbox",
+        "tier": "sandbox",
+        "take_rate": 0.000,
+        "model": "free_sandbox",
+        "description": "Mock data only · Rate limited · No production access",
+    },
+    "hts_demo_slf_003": {
+        "partner_name": "Starter",
+        "tier": "self_serve",
+        "take_rate": 0.085,
+        "model": "variable",
+        "description": "Pay-as-you-go · Production access · Community docs support",
     },
     "hts_demo_std_002": {
-        "partner_name": "Acme Travel (self-serve)",
+        "partner_name": "Standard",
         "tier": "standard",
-        "take_rate": 0.070,      # rack take rate for self-serve partners
+        "take_rate": 0.070,
         "model": "variable",
+        "description": "Production SLA · Core capabilities · Email support",
+    },
+    "hts_demo_grw_004": {
+        "partner_name": "Growth",
+        "tier": "growth",
+        "take_rate": 0.055,
+        "model": "variable_with_commitment",
+        "description": "$???K/mo min GBV · Bundles &amp; Financial Products",
+    },
+    "hts_demo_ent_001": {
+        "partner_name": "Enterprise",
+        "tier": "enterprise",
+        "take_rate": 0.035,
+        "model": "platform_plus_variable",
+        "description": "Annual committed GBV · Custom packaging · Dedicated AM",
     },
 }
 
