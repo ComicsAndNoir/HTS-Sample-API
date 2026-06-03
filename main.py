@@ -138,6 +138,11 @@ def root():
     return FileResponse("index.html")
 
 
+@app.get("/styles.css", include_in_schema=False)
+def styles():
+    return FileResponse("styles.css", media_type="text/css")
+
+
 @app.get("/v1/health", tags=["meta"])
 def health():
     return {"status": "ok", "service": "hts-marketplace-mock", "version": app.version}
