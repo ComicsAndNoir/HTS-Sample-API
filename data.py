@@ -371,7 +371,7 @@ HOPPER_PRODUCTS = {
         ),
         "fee_type": "pct_of_net",
         "fee_value": 0.08,   # 8% of supplier net total
-        "applies_to": ["lodging", "cars", "bundle"],
+        "applies_to": ["lodging", "bundle"],
     },
     "lfar": {
         "name": "Leave for Any Reason",
@@ -387,7 +387,7 @@ HOPPER_PRODUCTS = {
     },
     "price_freeze": {
         "name": "Price Freeze",
-        "tagline": "Lock in today's rate for up to 14 days while you decide.",
+        "tagline": "Lock in today's hotel rate for up to 14 days while you decide.",
         "description": (
             "Pay a one-time fee to freeze the current rate. If the price "
             "rises before you confirm, you still pay today's rate. If it "
@@ -396,31 +396,30 @@ HOPPER_PRODUCTS = {
         ),
         "fee_type": "flat",
         "fee_value": 35.00,  # flat fee per booking (converted from €32 at 1.08)
-        "applies_to": ["lodging", "cars", "bundle"],
+        "applies_to": ["lodging", "bundle"],
     },
     "price_drop": {
         "name": "Price Drop Protection",
-        "tagline": "Book now. If the price drops before check-in, we credit you the difference.",
+        "tagline": "Book now. If the hotel price drops before check-in, we credit you the difference.",
         "description": (
             "After booking, Hopper's price engine monitors the rate daily. "
             "If the price falls, you automatically receive a Hopper travel "
-            "credit for the full difference — no forms, no chasing. "
-            "Works on hotels, cars, and bundles."
+            "credit for the full difference — no forms, no chasing."
         ),
         "fee_type": "pct_of_net",
         "fee_value": 0.03,   # 3% of supplier net total
-        "applies_to": ["lodging", "cars", "bundle"],
+        "applies_to": ["lodging", "bundle"],
     },
-    "rdw": {
-        "name": "Rental Damage Waiver",
-        "tagline": "Skip the rental desk upsell. Full damage cover at a better price.",
+    "price_freeze_cars": {
+        "name": "Price Freeze for Cars",
+        "tagline": "Lock in today's car rate for up to 7 days while you decide.",
         "description": (
-            "Covers collision damage, theft, and third-party liability for "
-            "your rental — at a fraction of what the rental desk charges. "
-            "Accepted at all major suppliers. No deductible, no claims hassle."
+            "Pay a one-time fee to freeze the current rental rate. If the "
+            "price rises before you confirm, you still pay today's rate. "
+            "If it falls, you pay the lower price."
         ),
-        "fee_type": "flat_per_day",
-        "fee_value": 14.00,  # $14 per rental day
+        "fee_type": "flat",
+        "fee_value": 19.00,  # flat fee per booking
         "applies_to": ["cars", "bundle"],
     },
 }

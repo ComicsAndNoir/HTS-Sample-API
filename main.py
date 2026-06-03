@@ -58,7 +58,7 @@ def get_partner(authorization: Optional[str] = Header(default=None)):
 
 
 _HOPPER_UPLIFT = {
-    "cfar": 0.09, "lfar": 0.06, "price_freeze": 0.07, "price_drop": 0.11, "rdw": 0.05,
+    "cfar": 0.09, "lfar": 0.06, "price_freeze": 0.07, "price_drop": 0.11, "price_freeze_cars": 0.05,
 }
 
 
