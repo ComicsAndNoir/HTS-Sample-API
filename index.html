@@ -405,6 +405,32 @@
     .take-label { color: #c05621; font-weight: 600; }
     .take-amount { color: #c05621; font-weight: 700; }
 
+    /* HTS revenue — shown below total, not part of customer price */
+    .hts-revenue-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 4px;
+      color: #cbd5e0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .hts-revenue-divider::before, .hts-revenue-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #f0f4f8;
+    }
+    .price-row.hts-row {
+      color: #a0aec0;
+      font-size: 13px;
+      padding: 7px 0;
+      border-bottom: none;
+    }
+    .price-row.hts-row span:last-child { font-weight: 600; }
+
     /* Hopper products section */
     .hopper-section {
       margin-top: 18px;
@@ -1479,12 +1505,13 @@
         <div class="price-row"><span>Supplier net</span><span>${s}${b.supplier_net.toFixed(2)}</span></div>
         <div class="price-row"><span>VAT</span><span>${s}${b.vat.toFixed(2)}</span></div>
         <div class="price-row"><span>City tax</span><span>${s}${b.city_tax.toFixed(2)}</span></div>
-        <div class="price-row">
-          <span class="take-label">Marketplace take (${pct}%)</span>
-          <span class="take-amount">${s}${b.marketplace_take.toFixed(2)}</span>
-        </div>
         ${hopperSection}
         <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="price-row hts-row">
+          <span>Marketplace take (${pct}% of GBV)</span>
+          <span>${s}${b.marketplace_take.toFixed(2)}</span>
+        </div>
         ${mkBlock(data._marketplace)}
       </div>`;
   }
@@ -1509,12 +1536,13 @@
         </div>
         <div class="price-row"><span>Supplier net</span><span>${s}${b.supplier_net.toFixed(2)}</span></div>
         <div class="price-row"><span>VAT</span><span>${s}${b.vat.toFixed(2)}</span></div>
-        <div class="price-row">
-          <span class="take-label">Marketplace take (${pct}%)</span>
-          <span class="take-amount">${s}${b.marketplace_take.toFixed(2)}</span>
-        </div>
         ${hopperSection}
         <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="price-row hts-row">
+          <span>Marketplace take (${pct}% of GBV — absorbed by partner, not charged to customer)</span>
+          <span>${s}${b.marketplace_take.toFixed(2)}</span>
+        </div>
         ${mkBlock(data._marketplace)}
       </div>`;
   }
@@ -1553,12 +1581,13 @@
           <span>Bundle savings (4% off combined GBV)</span>
           <span style="font-weight:700">−${s}${b.bundle_discount.toFixed(2)}</span>
         </div>
-        <div class="price-row">
-          <span class="take-label">Bundle take (${pct}% of combined GBV)</span>
-          <span class="take-amount">${s}${b.bundle_marketplace_take.toFixed(2)}</span>
-        </div>
         ${hopperSection}
         <div class="price-row total"><span>Bundle Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="price-row hts-row">
+          <span>Marketplace take (${pct}% of combined GBV — absorbed by partner, not charged to customer)</span>
+          <span>${s}${b.bundle_marketplace_take.toFixed(2)}</span>
+        </div>
         ${mkBlock(data._marketplace)}
       </div>`;
   }

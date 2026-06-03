@@ -384,7 +384,7 @@ def quote(req: QuoteRequest, partner: dict = Depends(get_partner)):
         cfar_overrides["cfar"] = 0.12
 
     hopper_items, hopper_total = _hopper_line_items(net, req.hopper_products, "lodging", cfar_overrides)
-    sell_price = round(net + vat + city_tax + take + hopper_total, 2)
+    sell_price = round(net + vat + city_tax + hopper_total, 2)
 
     return {
         "property_id": p["property_id"],
@@ -509,7 +509,7 @@ def car_quote(req: CarQuoteRequest, partner: dict = Depends(get_partner)):
     vat = round(net * tax["vat_pct"], 2)
     take = round(net * partner["take_rate"], 2)
     hopper_items, hopper_total = _hopper_line_items(net, req.hopper_products, "cars", days=days)
-    sell_price = round(net + vat + take + hopper_total, 2)
+    sell_price = round(net + vat + hopper_total, 2)
 
     return {
         "car_id": car["car_id"],
@@ -597,7 +597,7 @@ def bundle_quote(req: BundleQuoteRequest, partner: dict = Depends(get_partner)):
     sell_price = round(
         hotel_net + hotel_vat + hotel_city_tax
         + car_net + car_vat
-        + bundle_take + hopper_total
+        + hopper_total
         - bundle_discount,
         2,
     )
