@@ -1,0 +1,352 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HTS API Marketplace",
+    "description": "Mock of the HTS API Marketplace v1 wedge: lodging connectivity (HTS Connect) + content, ranking, pricing, and taxes. Every response includes a `_marketplace` block showing which capabilities were invoked and the partner's take rate \u2014 making the commercial model visible in the API surface.",
+    "version": "0.1.0-wedge"
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "operationId": "health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lodging/search": {
+      "post": {
+        "tags": [
+          "lodging"
+        ],
+        "summary": "Search",
+        "description": "HTS Connect lodging search + Ranking.\n\nReturns available properties for a destination with a lead rate each.\n`sort=recommended` uses a mock ranking score blending review score and the\nmarketplace margin signal \u2014 a stand-in for the Ranking capability.",
+        "operationId": "search_v1_lodging_search_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lodging/properties/{property_id}": {
+      "get": {
+        "tags": [
+          "lodging"
+        ],
+        "summary": "Property Content",
+        "description": "Content & Property Mapping \u2014 full content payload for a single property.",
+        "operationId": "property_content_v1_lodging_properties__property_id__get",
+        "parameters": [
+          {
+            "name": "property_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Property Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/lodging/quote": {
+      "post": {
+        "tags": [
+          "lodging"
+        ],
+        "summary": "Quote",
+        "description": "Pricing + Taxes + the marketplace take rate, fully itemized.\n\nThis is where the commercial model becomes concrete: supplier net, taxes,\nthe partner's take rate on GBV, and the resulting sell price.",
+        "operationId": "quote_v1_lodging_quote_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "QuoteRequest": {
+        "properties": {
+          "property_id": {
+            "type": "string",
+            "title": "Property Id",
+            "examples": [
+              "hts_lis_4412"
+            ]
+          },
+          "rate_id": {
+            "type": "string",
+            "title": "Rate Id",
+            "examples": [
+              "r_4412_a"
+            ]
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In",
+            "examples": [
+              "2026-09-12"
+            ]
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out",
+            "examples": [
+              "2026-09-15"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "property_id",
+          "rate_id",
+          "check_in",
+          "check_out"
+        ],
+        "title": "QuoteRequest"
+      },
+      "SearchRequest": {
+        "properties": {
+          "destination": {
+            "type": "string",
+            "title": "Destination",
+            "examples": [
+              "Lisbon"
+            ]
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "title": "Check In",
+            "examples": [
+              "2026-09-12"
+            ]
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "title": "Check Out",
+            "examples": [
+              "2026-09-15"
+            ]
+          },
+          "guests": {
+            "type": "integer",
+            "maximum": 8.0,
+            "minimum": 1.0,
+            "title": "Guests",
+            "default": 2
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "recommended",
+              "price_asc",
+              "rating_desc"
+            ],
+            "title": "Sort",
+            "default": "recommended"
+          }
+        },
+        "type": "object",
+        "required": [
+          "destination",
+          "check_in",
+          "check_out"
+        ],
+        "title": "SearchRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

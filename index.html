@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTS API Marketplace</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a365d;
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: #63b3ed; }
+    .tagline { font-size: 12px; color: #90cdf4; margin-top: 3px; }
+    .version-badge {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      color: #bee3f8;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+    /* Partner bar */
+    .partner-bar {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .partner-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #a0aec0;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      white-space: nowrap;
+    }
+
+    .partner-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .partner-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: white;
+      user-select: none;
+    }
+
+    .partner-card:hover { border-color: #90cdf4; }
+    .partner-card.selected { border-color: #3182ce; background: #ebf8ff; }
+
+    .partner-card .name { font-size: 14px; font-weight: 600; color: #2d3748; }
+    .partner-card .meta { font-size: 12px; color: #718096; margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-enterprise { background: #faf5ff; color: #6b46c1; border: 1px solid #d6bcfa; }
+    .badge-standard   { background: #fffaf0; color: #c05621; border: 1px solid #fbd38d; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 22px; flex-wrap: wrap; }
+
+    .tab {
+      padding: 9px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #718096;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .tab:hover { background: white; color: #2d3748; }
+    .tab.active { background: white; color: #2b6cb0; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Main layout */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    /* Form panel */
+    .form-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+
+    .form-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a202c;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f0f4f8;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #2d3748;
+      background: white;
+      transition: border-color 0.15s;
+      outline: none;
+      font-family: inherit;
+    }
+    input:focus, select:focus { border-color: #63b3ed; box-shadow: 0 0 0 3px rgba(99,179,237,0.15); }
+
+    .btn-send {
+      width: 100%;
+      padding: 11px;
+      background: #2b6cb0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 6px;
+      font-family: inherit;
+    }
+    .btn-send:hover { background: #2c5282; }
+    .btn-send:active { transform: translateY(1px); }
+    .btn-send:disabled { background: #a0aec0; cursor: not-allowed; }
+
+    /* Results panel */
+    .results-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 22px;
+      border-bottom: 1px solid #f0f4f8;
+    }
+
+    .results-title { font-size: 14px; font-weight: 700; color: #1a202c; }
+
+    .view-toggle {
+      display: flex;
+      gap: 3px;
+      background: #f7fafc;
+      border-radius: 7px;
+      padding: 3px;
+    }
+
+    .view-btn {
+      padding: 5px 13px;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      background: transparent;
+      color: #718096;
+      font-weight: 600;
+      transition: all 0.12s;
+      font-family: inherit;
+    }
+    .view-btn.active { background: white; color: #2d3748; box-shadow: 0 1px 2px rgba(0,0,0,0.07); }
+
+    .results-body { padding: 22px; min-height: 280px; }
+
+    /* Empty / loading / error states */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 240px;
+      color: #cbd5e0;
+      gap: 10px;
+    }
+    .empty-icon { font-size: 36px; }
+    .empty-text { font-size: 14px; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: #a0aec0;
+      font-size: 14px;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #3182ce;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      padding: 14px 18px;
+      background: #fff5f5;
+      border: 1px solid #feb2b2;
+      border-radius: 8px;
+      color: #c53030;
+      font-size: 14px;
+    }
+
+    /* Property cards (search results) */
+    .property-cards { display: flex; flex-direction: column; gap: 14px; }
+
+    .property-card {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      transition: border-color 0.15s;
+    }
+    .property-card:hover { border-color: #bee3f8; }
+
+    .property-name { font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 5px; }
+
+    .stars { color: #f6ad55; font-size: 13px; letter-spacing: 1px; }
+
+    .review { font-size: 13px; color: #718096; margin-top: 5px; }
+    .review strong { color: #276749; font-size: 14px; }
+
+    .rank-chip {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 2px 8px;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 99px;
+      font-size: 11px;
+      color: #a0aec0;
+    }
+
+    .rate-info { text-align: right; }
+    .rate-price { font-size: 22px; font-weight: 700; color: #1a202c; }
+    .rate-price span { font-size: 13px; font-weight: 400; color: #a0aec0; }
+    .rate-meta { font-size: 12px; color: #a0aec0; margin-top: 3px; }
+
+    .refund-badge {
+      display: inline-block;
+      margin-top: 7px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .refundable     { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+    .non-refundable { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+
+    /* Marketplace metadata block */
+    .marketplace-block {
+      margin-top: 20px;
+      padding: 16px 18px;
+      background: #f7fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .marketplace-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #a0aec0;
+      margin-bottom: 12px;
+    }
+    .marketplace-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .marketplace-item .mk-key { font-size: 11px; color: #a0aec0; margin-bottom: 3px; }
+    .marketplace-item .mk-val { font-size: 13px; font-weight: 600; color: #2d3748; }
+    .marketplace-item.full { grid-column: 1 / -1; }
+
+    /* Property detail view */
+    .prop-desc { font-size: 14px; color: #4a5568; line-height: 1.6; margin: 12px 0; }
+
+    .amenity-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; margin-bottom: 20px; }
+    .amenity {
+      padding: 4px 12px;
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #a0aec0;
+      margin-bottom: 10px;
+    }
+
+    .rates-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .rates-table th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #a0aec0;
+      border-bottom: 2px solid #f0f4f8;
+      font-weight: 600;
+    }
+    .rates-table td {
+      padding: 10px 10px;
+      border-bottom: 1px solid #f7fafc;
+      color: #2d3748;
+    }
+    .rates-table tr:last-child td { border-bottom: none; }
+
+    /* Quote breakdown */
+    .quote-card { max-width: 500px; }
+    .quote-hotel { font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 4px; }
+    .quote-sub { font-size: 13px; color: #a0aec0; margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid #f7fafc;
+      font-size: 14px;
+      color: #4a5568;
+    }
+    .price-row:last-of-type { border-bottom: none; }
+
+    .price-row.total {
+      border-top: 2px solid #e2e8f0;
+      margin-top: 6px;
+      padding-top: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a202c;
+    }
+
+    .take-label { color: #c05621; font-weight: 600; }
+    .take-amount { color: #c05621; font-weight: 700; }
+
+    /* Hopper products section */
+    .hopper-section {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid #f0f4f8;
+    }
+
+    .hopper-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .hopper-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hopper-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6b46c1;
+      background: #faf5ff;
+      border: 1px solid #d6bcfa;
+      padding: 2px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.3px;
+    }
+
+    .product-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 11px 13px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .product-option:hover { border-color: #b794f4; }
+    .product-option.checked { border-color: #805ad5; background: #faf5ff; }
+
+    .product-option input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      accent-color: #805ad5;
+      cursor: pointer;
+    }
+
+    .product-info { flex: 1; }
+    .product-name { font-size: 13px; font-weight: 600; color: #2d3748; }
+    .product-tagline { font-size: 11px; color: #718096; margin-top: 2px; line-height: 1.4; }
+    .product-fee-tag {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b46c1;
+      background: #f3e8ff;
+      padding: 1px 7px;
+      border-radius: 99px;
+    }
+
+    /* Hopper rows in quote breakdown */
+    .hopper-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+      color: #a0aec0;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .hopper-divider::before, .hopper-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #f0f4f8;
+    }
+
+    .price-row.hopper-row { color: #553c9a; }
+    .price-row.hopper-row span:last-child { font-weight: 600; }
+
+    /* Hopper price intelligence signal */
+    .price-signal {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 9px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .signal-rising   { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+    .signal-volatile { background: #fffaf0; color: #c05621; border: 1px solid #fbd38d; }
+    .signal-stable   { background: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; }
+    .signal-falling  { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+
+    .signal-rec {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: rgba(0,0,0,0.07);
+    }
+
+    .signal-insight {
+      font-size: 11px;
+      color: #718096;
+      margin-top: 3px;
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    .signal-low {
+      font-size: 11px;
+      color: #a0aec0;
+      margin-top: 2px;
+    }
+
+    /* Car-specific styles */
+    .supplier-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #e6fffa;
+      color: #234e52;
+      border: 1px solid #81e6d9;
+    }
+
+    .category-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .cat-economy { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+    .cat-midsize { background: #ebf8ff; color: #2b6cb0; border: 1px solid #90cdf4; }
+    .cat-suv     { background: #fff5f5; color: #c05621; border: 1px solid #fbd38d; }
+
+    .location-note {
+      font-size: 12px;
+      color: #718096;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-bottom: 14px;
+    }
+
+    /* Bundle breakdown */
+    .bundle-card { max-width: 540px; }
+
+    .bundle-section-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #a0aec0;
+    }
+    .bundle-section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    /* JSON view */
+    .json-view {
+      background: #1a202c;
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+    pre {
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .jk { color: #63b3ed; }
+    .js { color: #68d391; }
+    .jn { color: #f6ad55; }
+    .jb { color: #fc8181; }
+    .jz { color: #718096; }
+
+    @media (max-width: 800px) {
+      .main-layout { grid-template-columns: 1fr; }
+      .marketplace-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">HTS <span>API Marketplace</span></div>
+    <div class="tagline">Lodging &amp; Cars Connectivity — v1 Wedge Prototype</div>
+  </div>
+  <div class="version-badge">v0.1.0-wedge</div>
+</header>
+
+<div class="container">
+
+  <!-- Partner selector -->
+  <div class="partner-bar">
+    <span class="partner-label">Viewing as</span>
+    <div class="partner-cards">
+      <div class="partner-card selected" onclick="selectPartner('hts_demo_ent_001', this)">
+        <div class="name">Capital One Travel</div>
+        <div class="meta">
+          <span class="badge badge-enterprise">Enterprise</span>
+          4.0% take rate
+        </div>
+      </div>
+      <div class="partner-card" onclick="selectPartner('hts_demo_std_002', this)">
+        <div class="name">Acme Travel</div>
+        <div class="meta">
+          <span class="badge badge-standard">Standard</span>
+          7.0% take rate
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('search', this)">Search Hotels</div>
+    <div class="tab" onclick="switchTab('property', this)">Property Detail</div>
+    <div class="tab" onclick="switchTab('quote', this)">Hotel Quote</div>
+    <div class="tab" onclick="switchTab('cars', this)">Car Quote</div>
+    <div class="tab" onclick="switchTab('bundle', this)">Bundle Quote</div>
+  </div>
+
+  <!-- ── Search Hotels ── -->
+  <div id="tab-search" class="tab-panel active">
+    <div class="main-layout">
+      <div class="form-panel">
+        <div class="form-title">Search Hotels</div>
+        <div class="form-group">
+          <label>Destination</label>
+          <select id="search-destination">
+            <option value="Lisbon">Lisbon</option>
+            <option value="Madrid">Madrid</option>
+            <option value="New York">New York</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Check-in</label>
+          <input type="date" id="search-checkin" value="2026-09-12">
+        </div>
+        <div class="form-group">
+          <label>Check-out</label>
+          <input type="date" id="search-checkout" value="2026-09-15">
+        </div>
+        <div class="form-group">
+          <label>Guests</label>
+          <input type="number" id="search-guests" value="2" min="1" max="8">
+        </div>
+        <div class="form-group">
+          <label>Sort by</label>
+          <select id="search-sort">
+            <option value="recommended">Recommended</option>
+            <option value="price_asc">Price — low to high</option>
+            <option value="rating_desc">Rating — high to low</option>
+          </select>
+        </div>
+        <button class="btn-send" onclick="doSearch()">Search</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title">Results</span>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setView('search','visual',this)">Visual</button>
+            <button class="view-btn" onclick="setView('search','json',this)">JSON</button>
+          </div>
+        </div>
+        <div class="results-body" id="search-results">
+          <div class="empty-state">
+            <div class="empty-icon">🏨</div>
+            <div class="empty-text">Run a search to see results</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Property Detail ── -->
+  <div id="tab-property" class="tab-panel">
+    <div class="main-layout">
+      <div class="form-panel">
+        <div class="form-title">Property Detail</div>
+        <div class="form-group">
+          <label>Property</label>
+          <select id="property-id"><option disabled>Loading…</option></select>
+        </div>
+        <button class="btn-send" onclick="doProperty()">Fetch Property</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title">Property Content</span>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setView('property','visual',this)">Visual</button>
+            <button class="view-btn" onclick="setView('property','json',this)">JSON</button>
+          </div>
+        </div>
+        <div class="results-body" id="property-results">
+          <div class="empty-state">
+            <div class="empty-icon">🏛️</div>
+            <div class="empty-text">Select a property to view its content</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hotel Quote ── -->
+  <div id="tab-quote" class="tab-panel">
+    <div class="main-layout">
+      <div class="form-panel">
+        <div class="form-title">Hotel Quote</div>
+        <div class="form-group">
+          <label>Property</label>
+          <select id="quote-property" onchange="updateRates()"><option disabled>Loading…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Rate</label>
+          <select id="quote-rate"></select>
+        </div>
+        <div class="form-group">
+          <label>Check-in</label>
+          <input type="date" id="quote-checkin" value="2026-09-12">
+        </div>
+        <div class="form-group">
+          <label>Check-out</label>
+          <input type="date" id="quote-checkout" value="2026-09-15">
+        </div>
+        <div class="hopper-section">
+          <div class="hopper-header">
+            <span class="hopper-section-label">Financial Products</span>
+            <span class="hopper-badge">Powered by Hopper</span>
+          </div>
+          <div id="hopper-products-container">
+            <div style="font-size:12px;color:#a0aec0;padding:8px 0;">Loading products…</div>
+          </div>
+        </div>
+        <button class="btn-send" onclick="doQuote()">Get Hotel Quote</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title">Hotel Price Breakdown</span>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setView('quote','visual',this)">Visual</button>
+            <button class="view-btn" onclick="setView('quote','json',this)">JSON</button>
+          </div>
+        </div>
+        <div class="results-body" id="quote-results">
+          <div class="empty-state">
+            <div class="empty-icon">💵</div>
+            <div class="empty-text">Configure a quote to see the price breakdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Car Quote ── -->
+  <div id="tab-cars" class="tab-panel">
+    <div class="main-layout">
+      <div class="form-panel">
+        <div class="form-title">Car Quote</div>
+        <div class="form-group">
+          <label>Destination</label>
+          <select id="cars-destination" onchange="onCarFormChange()">
+            <option value="Lisbon">Lisbon</option>
+            <option value="Madrid">Madrid</option>
+            <option value="New York">New York</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pickup Location</label>
+          <select id="cars-pickup" onchange="onCarFormChange()">
+            <option value="airport">Airport</option>
+            <option value="city">City Centre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Car</label>
+          <select id="cars-car"><option disabled>Loading…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Pickup Date</label>
+          <input type="date" id="cars-pickup-date" value="2026-09-12">
+        </div>
+        <div class="form-group">
+          <label>Dropoff Date</label>
+          <input type="date" id="cars-dropoff-date" value="2026-09-15">
+        </div>
+        <div class="hopper-section">
+          <div class="hopper-header">
+            <span class="hopper-section-label">Financial Products</span>
+            <span class="hopper-badge">Powered by Hopper</span>
+          </div>
+          <div id="car-hopper-container">
+            <div style="font-size:12px;color:#a0aec0;padding:8px 0;">Loading products…</div>
+          </div>
+        </div>
+        <button class="btn-send" onclick="doCarQuote()">Get Car Quote</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title">Car Price Breakdown</span>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setView('cars','visual',this)">Visual</button>
+            <button class="view-btn" onclick="setView('cars','json',this)">JSON</button>
+          </div>
+        </div>
+        <div class="results-body" id="cars-results">
+          <div class="empty-state">
+            <div class="empty-icon">🚗</div>
+            <div class="empty-text">Configure a car rental to see the price breakdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bundle Quote ── -->
+  <div id="tab-bundle" class="tab-panel">
+    <div class="main-layout">
+      <div class="form-panel">
+        <div class="form-title">Bundle Quote</div>
+        <div class="form-group">
+          <label>Hotel</label>
+          <select id="bundle-property" onchange="onBundlePropertyChange()"><option disabled>Loading…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Rate</label>
+          <select id="bundle-rate"></select>
+        </div>
+        <div class="form-group">
+          <label>Car Pickup</label>
+          <select id="bundle-pickup" onchange="onBundlePickupChange()">
+            <option value="airport">Airport</option>
+            <option value="city">City Centre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Car</label>
+          <select id="bundle-car"><option disabled>Loading…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Check-in / Pickup Date</label>
+          <input type="date" id="bundle-checkin" value="2026-09-12">
+        </div>
+        <div class="form-group">
+          <label>Check-out / Dropoff Date</label>
+          <input type="date" id="bundle-checkout" value="2026-09-15">
+        </div>
+        <div class="hopper-section">
+          <div class="hopper-header">
+            <span class="hopper-section-label">Financial Products</span>
+            <span class="hopper-badge">Powered by Hopper</span>
+          </div>
+          <div id="bundle-hopper-container">
+            <div style="font-size:12px;color:#a0aec0;padding:8px 0;">Loading products…</div>
+          </div>
+        </div>
+        <button class="btn-send" onclick="doBundleQuote()">Get Bundle Quote</button>
+      </div>
+      <div class="results-panel">
+        <div class="results-header">
+          <span class="results-title">Bundle Price Breakdown</span>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="setView('bundle','visual',this)">Visual</button>
+            <button class="view-btn" onclick="setView('bundle','json',this)">JSON</button>
+          </div>
+        </div>
+        <div class="results-body" id="bundle-results">
+          <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <div class="empty-text">Select a hotel + car bundle to see the combined breakdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let partnerKey = 'hts_demo_ent_001';
+  const viewState = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual' };
+  const lastData  = { search: null, property: null, quote: null, cars: null, bundle: null };
+
+  let propertiesCache     = [];
+  let hopperProductsCache = [];
+  let carsCache           = {};   // { "Lisbon": [{car_id, supplier, ...}], ... }
+
+  // ── Hopper products ────────────────────────────────────────────────────────
+  async function loadHopperProducts() {
+    try {
+      const res  = await fetch('/v1/products');
+      const data = await res.json();
+      hopperProductsCache = data.products;
+      renderHopperProducts('hopper-products-container', 'lodging');
+      renderHopperProducts('car-hopper-container',      'cars');
+      renderHopperProducts('bundle-hopper-container',   'bundle');
+    } catch (e) { console.error('Failed to load Hopper products:', e); }
+  }
+
+  function renderHopperProducts(containerId, context) {
+    const products  = hopperProductsCache.filter(p => p.applies_to && p.applies_to.includes(context));
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!products.length) {
+      container.innerHTML = '<div style="font-size:12px;color:#a0aec0;padding:8px 0;">No products available for this booking type.</div>';
+      return;
+    }
+    container.innerHTML = products.map(p => {
+      const feeLabel = p.fee_type === 'flat'
+        ? `$${p.fee_value.toFixed(2)} per booking`
+        : p.fee_type === 'flat_per_day'
+        ? `$${p.fee_value.toFixed(2)} per day`
+        : `${(p.fee_value * 100).toFixed(0)}% of booking cost`;
+      return `
+        <label class="product-option">
+          <input type="checkbox" value="${p.product_id}">
+          <div class="product-info">
+            <div class="product-name">${p.name}</div>
+            <div class="product-tagline">${p.tagline}</div>
+            <span class="product-fee-tag">${feeLabel}</span>
+          </div>
+        </label>`;
+    }).join('');
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => cb.closest('.product-option').classList.toggle('checked', cb.checked));
+    });
+  }
+
+  function selectedHopperProducts(containerId) {
+    return [...document.querySelectorAll(`#${containerId} input:checked`)].map(cb => cb.value);
+  }
+
+  // ── Properties ────────────────────────────────────────────────────────────
+  async function loadProperties() {
+    try {
+      const res  = await fetch('/v1/lodging/properties', { headers: { Authorization: `Bearer ${partnerKey}` } });
+      const data = await res.json();
+      propertiesCache = data.properties;
+      const options = propertiesCache
+        .map(p => `<option value="${p.property_id}">${p.name} (${p.destination})</option>`)
+        .join('');
+      ['property-id', 'quote-property', 'bundle-property'].forEach(id => {
+        document.getElementById(id).innerHTML = options;
+      });
+      updateRates();
+      updateBundleRates();
+      updateBundleCar();
+    } catch (e) { console.error('Failed to load properties:', e); }
+  }
+
+  // ── Cars ──────────────────────────────────────────────────────────────────
+  async function loadCars() {
+    try {
+      const res  = await fetch('/v1/cars', { headers: { Authorization: `Bearer ${partnerKey}` } });
+      const data = await res.json();
+      carsCache = data.cars_by_destination;
+      onCarFormChange();
+      updateBundleCar();
+    } catch (e) { console.error('Failed to load cars:', e); }
+  }
+
+  function updateCarDropdown(selectId, destination, pickupLocation) {
+    const cars = carsCache[destination] || [];
+    const sel  = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = cars.map(c => {
+      const rate = c.rates[pickupLocation];
+      return `<option value="${c.car_id}">${c.supplier} — ${c.model} ($${rate.rate_per_day}/day · ${catLabel(c.category)})</option>`;
+    }).join('') || '<option disabled>No cars available</option>';
+  }
+
+  function catLabel(cat) {
+    return { economy: 'Economy', midsize: 'Midsize', suv: 'SUV' }[cat] || cat;
+  }
+
+  function onCarFormChange() {
+    const dest   = document.getElementById('cars-destination').value;
+    const pickup = document.getElementById('cars-pickup').value;
+    updateCarDropdown('cars-car', dest, pickup);
+  }
+
+  function onBundlePropertyChange() {
+    updateBundleRates();
+    updateBundleCar();
+  }
+
+  function onBundlePickupChange() {
+    updateBundleCar();
+  }
+
+  function updateBundleCar() {
+    const propId = document.getElementById('bundle-property')?.value;
+    if (!propId) return;
+    const prop   = propertiesCache.find(p => p.property_id === propId);
+    if (!prop) return;
+    const pickup = document.getElementById('bundle-pickup').value;
+    updateCarDropdown('bundle-car', prop.destination, pickup);
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+  function updateRates() {
+    const propId = document.getElementById('quote-property').value;
+    const prop   = propertiesCache.find(p => p.property_id === propId);
+    if (!prop) return;
+    document.getElementById('quote-rate').innerHTML = prop.rates
+      .map(r => `<option value="${r.rate_id}">${r.room_name} — ${fmt(r.board)} ($${r.supplier_net}/night)</option>`)
+      .join('');
+  }
+
+  function updateBundleRates() {
+    const propId = document.getElementById('bundle-property').value;
+    const prop   = propertiesCache.find(p => p.property_id === propId);
+    if (!prop) return;
+    document.getElementById('bundle-rate').innerHTML = prop.rates
+      .map(r => `<option value="${r.rate_id}">${r.room_name} — ${fmt(r.board)} ($${r.supplier_net}/night)</option>`)
+      .join('');
+  }
+
+  function selectPartner(key, el) {
+    partnerKey = key;
+    document.querySelectorAll('.partner-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function setView(tab, view, btn) {
+    viewState[tab] = view;
+    btn.closest('.view-toggle').querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (lastData[tab]) renderResults(tab, lastData[tab]);
+  }
+
+  function showLoading(id) {
+    document.getElementById(id).innerHTML =
+      '<div class="loading"><div class="spinner"></div>Fetching from API…</div>';
+  }
+
+  function showError(id, msg) {
+    document.getElementById(id).innerHTML = `<div class="error-msg">${msg}</div>`;
+  }
+
+  // ── JSON syntax highlighter ────────────────────────────────────────────────
+  function highlight(json) {
+    return json.replace(
+      /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      m => {
+        if (/^"/.test(m))         return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
+        if (/true|false/.test(m)) return `<span class="jb">${m}</span>`;
+        if (/null/.test(m))       return `<span class="jz">${m}</span>`;
+        return `<span class="jn">${m}</span>`;
+      }
+    );
+  }
+
+  // ── Render dispatcher ──────────────────────────────────────────────────────
+  function renderResults(tab, data) {
+    const id = tab + '-results';
+    if (viewState[tab] === 'json') {
+      document.getElementById(id).innerHTML =
+        `<div class="json-view"><pre>${highlight(JSON.stringify(data, null, 2))}</pre></div>`;
+    } else {
+      ({ search: renderSearch, property: renderProperty, quote: renderQuote,
+         cars: renderCarQuote, bundle: renderBundleQuote })[tab](id, data);
+    }
+  }
+
+  // ── Marketplace block ──────────────────────────────────────────────────────
+  function mkBlock(m) {
+    const pct = (m.take_rate * 100).toFixed(1);
+    const upliftRow = m.estimated_conversion_uplift ? `
+          <div class="marketplace-item full">
+            <div class="mk-key">Est. Conversion Uplift from Hopper products</div>
+            <div class="mk-val" style="color:#6b46c1;font-size:15px">${m.estimated_conversion_uplift}</div>
+          </div>` : '';
+    return `
+      <div class="marketplace-block">
+        <div class="marketplace-title">_marketplace — commercial metadata</div>
+        <div class="marketplace-grid">
+          <div class="marketplace-item"><div class="mk-key">Partner</div><div class="mk-val">${m.partner}</div></div>
+          <div class="marketplace-item"><div class="mk-key">Tier</div><div class="mk-val">${m.tier}</div></div>
+          <div class="marketplace-item"><div class="mk-key">Take Rate</div><div class="mk-val">${pct}%</div></div>
+          <div class="marketplace-item"><div class="mk-key">Model</div><div class="mk-val">${m.commercial_model || '—'}</div></div>
+          <div class="marketplace-item full"><div class="mk-key">Capabilities Invoked</div><div class="mk-val">${m.capabilities_invoked.join('  ·  ')}</div></div>
+          ${upliftRow}
+        </div>
+      </div>`;
+  }
+
+  function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+  function fmt(board) { return board.replace(/_/g, ' '); }
+  function sym(currency) { return currency === 'USD' ? '$' : '€'; }
+
+  // ── Search visual ──────────────────────────────────────────────────────────
+  function renderSearch(id, data) {
+    if (!data.results?.length) {
+      document.getElementById(id).innerHTML =
+        '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No results for this destination.</div></div>';
+      return;
+    }
+    const TREND_ICON  = { rising: '↑', falling: '↓', stable: '→', volatile: '⚡' };
+    const TREND_LABEL = { rising: 'Rising', falling: 'Falling', stable: 'Stable', volatile: 'Volatile' };
+    const cards = data.results.map(r => {
+      const sig = r._hopper_intelligence;
+      const recLabel = sig.recommendation === 'buy_now' ? 'Buy now' : 'Consider waiting';
+      return `
+      <div class="property-card">
+        <div>
+          <div class="property-name">${r.name}</div>
+          <div class="stars">${stars(r.star_rating)}</div>
+          <div class="review">Review score: <strong>${r.review_score}</strong> / 10</div>
+          <span class="rank-chip">Rank score ${r.rank_score}</span>
+          <div>
+            <div class="price-signal signal-${sig.trend}">
+              ${TREND_ICON[sig.trend]} ${TREND_LABEL[sig.trend]}
+              &nbsp;<span class="signal-rec">${recLabel}</span>
+              &nbsp;· ${Math.round(sig.confidence * 100)}% confident
+            </div>
+            <div class="signal-insight">${sig.insight}</div>
+            <div class="signal-low">Predicted low: $${sig.predicted_low}/night</div>
+          </div>
+        </div>
+        <div class="rate-info">
+          <div class="rate-price">${sym(r.lead_rate.currency)}${r.lead_rate.nightly_from}<span>/night</span></div>
+          <div class="rate-meta">${r.lead_rate.room_name}</div>
+          <div class="rate-meta">${fmt(r.lead_rate.board)}</div>
+          <span class="refund-badge ${r.lead_rate.refundable ? 'refundable' : 'non-refundable'}">
+            ${r.lead_rate.refundable ? 'Refundable' : 'Non-refundable'}
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById(id).innerHTML =
+      `<div class="property-cards">${cards}</div>${mkBlock(data._marketplace)}`;
+  }
+
+  // ── Property visual ────────────────────────────────────────────────────────
+  function renderProperty(id, data) {
+    const amenities = data.content.amenities
+      .map(a => `<span class="amenity">${fmt(a)}</span>`).join('');
+    const rateRows = data.rates.map(r => `
+      <tr>
+        <td>${r.room_name}</td>
+        <td>${fmt(r.board)}</td>
+        <td><strong>${sym(r.currency)}${r.supplier_net}</strong></td>
+        <td><span class="refund-badge ${r.refundable ? 'refundable' : 'non-refundable'}">${r.refundable ? 'Yes' : 'No'}</span></td>
+      </tr>`).join('');
+    document.getElementById(id).innerHTML = `
+      <div class="property-detail">
+        <div class="property-name">${data.name}</div>
+        <div class="stars">${stars(data.star_rating)}</div>
+        <div class="review" style="margin-bottom:0">
+          Review score: <strong>${data.review_score}</strong> / 10 &nbsp;·&nbsp; ${data.destination}, ${data.country}
+        </div>
+        <p class="prop-desc">${data.content.description}</p>
+        <div class="amenity-list">${amenities}</div>
+        <div class="section-label">Available Rates</div>
+        <table class="rates-table">
+          <thead><tr><th>Room</th><th>Board</th><th>Net / night</th><th>Refundable</th></tr></thead>
+          <tbody>${rateRows}</tbody>
+        </table>
+        ${mkBlock(data._marketplace)}
+      </div>`;
+  }
+
+  // ── Hotel Quote visual ─────────────────────────────────────────────────────
+  function renderQuote(id, data) {
+    const b   = data.price_breakdown;
+    const pct = (data._marketplace.take_rate * 100).toFixed(1);
+    const s   = sym(data.currency);
+
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) => {
+      const noteHtml = p.note
+        ? `<div style="font-size:11px;color:#718096;margin-top:2px">↑ ${p.note}</div>` : '';
+      return `<div class="price-row hopper-row"><span>${p.name}${noteHtml}</span><span>${s}${p.fee.toFixed(2)}</span></div>`;
+    }).join('');
+    const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
+
+    document.getElementById(id).innerHTML = `
+      <div class="quote-card">
+        <div class="quote-hotel">${data.room_name}</div>
+        <div class="quote-sub">${data.nights} night${data.nights !== 1 ? 's' : ''} &nbsp;·&nbsp; ${data.currency}</div>
+        <div class="price-row"><span>Supplier net</span><span>${s}${b.supplier_net.toFixed(2)}</span></div>
+        <div class="price-row"><span>VAT</span><span>${s}${b.vat.toFixed(2)}</span></div>
+        <div class="price-row"><span>City tax</span><span>${s}${b.city_tax.toFixed(2)}</span></div>
+        <div class="price-row">
+          <span class="take-label">Marketplace take (${pct}%)</span>
+          <span class="take-amount">${s}${b.marketplace_take.toFixed(2)}</span>
+        </div>
+        ${hopperSection}
+        <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        ${mkBlock(data._marketplace)}
+      </div>`;
+  }
+
+  // ── Car Quote visual ───────────────────────────────────────────────────────
+  function renderCarQuote(id, data) {
+    const b   = data.price_breakdown;
+    const pct = (data._marketplace.take_rate * 100).toFixed(1);
+    const s   = '$';
+
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) =>
+      `<div class="price-row hopper-row"><span>${p.name}</span><span>${s}${p.fee.toFixed(2)}</span></div>`
+    ).join('');
+    const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
+
+    document.getElementById(id).innerHTML = `
+      <div class="quote-card">
+        <div class="quote-hotel">${data.supplier} — ${data.model}</div>
+        <div class="quote-sub">
+          <span class="category-badge cat-${data.category}">${catLabel(data.category)}</span>
+          ${data.days} day${data.days !== 1 ? 's' : ''} &nbsp;·&nbsp; ${data.location_name}
+        </div>
+        <div class="price-row"><span>Supplier net</span><span>${s}${b.supplier_net.toFixed(2)}</span></div>
+        <div class="price-row"><span>VAT</span><span>${s}${b.vat.toFixed(2)}</span></div>
+        <div class="price-row">
+          <span class="take-label">Marketplace take (${pct}%)</span>
+          <span class="take-amount">${s}${b.marketplace_take.toFixed(2)}</span>
+        </div>
+        ${hopperSection}
+        <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        ${mkBlock(data._marketplace)}
+      </div>`;
+  }
+
+  // ── Bundle Quote visual ────────────────────────────────────────────────────
+  function renderBundleQuote(id, data) {
+    const b   = data.price_breakdown;
+    const pct = (data._marketplace.take_rate * 100).toFixed(1);
+    const s   = '$';
+
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) =>
+      `<div class="price-row hopper-row"><span>${p.name}</span><span>${s}${p.fee.toFixed(2)}</span></div>`
+    ).join('');
+    const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
+
+    document.getElementById(id).innerHTML = `
+      <div class="bundle-card">
+        <div class="quote-hotel">${data.hotel.name}</div>
+        <div class="quote-sub">
+          ${data.hotel.nights} night${data.hotel.nights !== 1 ? 's' : ''} &nbsp;+&nbsp;
+          ${data.car.supplier} ${data.car.model} &nbsp;·&nbsp; ${data.currency}
+        </div>
+
+        <div class="bundle-section-divider">Hotel</div>
+        <div class="price-row"><span>${data.hotel.room_name} · supplier net</span><span>${s}${b.hotel.supplier_net.toFixed(2)}</span></div>
+        <div class="price-row"><span>VAT</span><span>${s}${b.hotel.vat.toFixed(2)}</span></div>
+        <div class="price-row"><span>City tax</span><span>${s}${b.hotel.city_tax.toFixed(2)}</span></div>
+
+        <div class="bundle-section-divider">Car</div>
+        <div class="price-row"><span>${data.car.model} · supplier net</span><span>${s}${b.car.supplier_net.toFixed(2)}</span></div>
+        <div class="price-row"><span>VAT</span><span>${s}${b.car.vat.toFixed(2)}</span></div>
+
+        <div class="bundle-section-divider">Bundle</div>
+        <div class="price-row"><span>Combined GBV</span><span>${s}${b.combined_net.toFixed(2)}</span></div>
+        <div class="price-row" style="color:#276749">
+          <span>Bundle savings (4% off combined GBV)</span>
+          <span style="font-weight:700">−${s}${b.bundle_discount.toFixed(2)}</span>
+        </div>
+        <div class="price-row">
+          <span class="take-label">Bundle take (${pct}% of combined GBV)</span>
+          <span class="take-amount">${s}${b.bundle_marketplace_take.toFixed(2)}</span>
+        </div>
+        ${hopperSection}
+        <div class="price-row total"><span>Bundle Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
+        ${mkBlock(data._marketplace)}
+      </div>`;
+  }
+
+  // ── Bootstrap ──────────────────────────────────────────────────────────────
+  loadProperties();
+  loadHopperProducts();
+  loadCars();
+
+  // ── API calls ──────────────────────────────────────────────────────────────
+  async function doSearch() {
+    showLoading('search-results');
+    try {
+      const res = await fetch('/v1/lodging/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
+        body: JSON.stringify({
+          destination: document.getElementById('search-destination').value,
+          check_in:    document.getElementById('search-checkin').value,
+          check_out:   document.getElementById('search-checkout').value,
+          guests:      parseInt(document.getElementById('search-guests').value),
+          sort:        document.getElementById('search-sort').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      lastData.search = data;
+      renderResults('search', data);
+    } catch (e) { showError('search-results', `Error: ${e.message}`); }
+  }
+
+  async function doProperty() {
+    showLoading('property-results');
+    const propId = document.getElementById('property-id').value;
+    try {
+      const res = await fetch(`/v1/lodging/properties/${propId}`, {
+        headers: { Authorization: `Bearer ${partnerKey}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      lastData.property = data;
+      renderResults('property', data);
+    } catch (e) { showError('property-results', `Error: ${e.message}`); }
+  }
+
+  async function doQuote() {
+    showLoading('quote-results');
+    try {
+      const res = await fetch('/v1/lodging/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
+        body: JSON.stringify({
+          property_id:     document.getElementById('quote-property').value,
+          rate_id:         document.getElementById('quote-rate').value,
+          check_in:        document.getElementById('quote-checkin').value,
+          check_out:       document.getElementById('quote-checkout').value,
+          hopper_products: selectedHopperProducts('hopper-products-container'),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      lastData.quote = data;
+      renderResults('quote', data);
+    } catch (e) { showError('quote-results', `Error: ${e.message}`); }
+  }
+
+  async function doCarQuote() {
+    showLoading('cars-results');
+    try {
+      const res = await fetch('/v1/cars/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
+        body: JSON.stringify({
+          car_id:          document.getElementById('cars-car').value,
+          pickup_location: document.getElementById('cars-pickup').value,
+          pickup_date:     document.getElementById('cars-pickup-date').value,
+          dropoff_date:    document.getElementById('cars-dropoff-date').value,
+          hopper_products: selectedHopperProducts('car-hopper-container'),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      lastData.cars = data;
+      renderResults('cars', data);
+    } catch (e) { showError('cars-results', `Error: ${e.message}`); }
+  }
+
+  async function doBundleQuote() {
+    showLoading('bundle-results');
+    try {
+      const res = await fetch('/v1/bundle/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${partnerKey}` },
+        body: JSON.stringify({
+          property_id:     document.getElementById('bundle-property').value,
+          rate_id:         document.getElementById('bundle-rate').value,
+          car_id:          document.getElementById('bundle-car').value,
+          pickup_location: document.getElementById('bundle-pickup').value,
+          check_in:        document.getElementById('bundle-checkin').value,
+          check_out:       document.getElementById('bundle-checkout').value,
+          hopper_products: selectedHopperProducts('bundle-hopper-container'),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      lastData.bundle = data;
+      renderResults('bundle', data);
+    } catch (e) { showError('bundle-results', `Error: ${e.message}`); }
+  }
+</script>
+</body>
+</html>
