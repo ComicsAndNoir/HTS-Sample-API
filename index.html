@@ -613,6 +613,39 @@
       .main-layout { grid-template-columns: 1fr; }
       .marketplace-grid { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* Request code view */
+    .req-sections { display: flex; flex-direction: column; gap: 16px; }
+
+    .req-lang-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #a0aec0;
+      margin-bottom: 7px;
+    }
+
+    .code-block-wrap { position: relative; }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 3px 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 5px;
+      color: #90cdf4;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+      line-height: 1.5;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.15); color: #bee3f8; }
+    .copy-btn.copied { color: #68d391; border-color: rgba(104,211,145,0.5); }
   </style>
 </head>
 <body>
@@ -1077,7 +1110,11 @@
     viewState[tab] = view;
     btn.closest('.view-toggle').querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    if (lastData[tab]) renderResults(tab, lastData[tab]);
+    if (view === 'request') {
+      document.getElementById(tab + '-results').innerHTML = buildRequestView(tab);
+    } else if (lastData[tab]) {
+      renderResults(tab, lastData[tab]);
+    }
   }
 
   function showLoading(id) {
@@ -1102,12 +1139,155 @@
     );
   }
 
+  // ── Code example helpers ───────────────────────────────────────────────────
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightCode(code) {
+    // Split on double-quoted strings so keywords inside strings aren't coloured
+    const tokens = [];
+    const strRe = /"[^"\\]*(?:\\.[^"\\]*)*"/g;
+    let last = 0, m;
+    while ((m = strRe.exec(code)) !== null) {
+      if (m.index > last) tokens.push({ t: 'code', v: code.slice(last, m.index) });
+      tokens.push({ t: 'str', v: m[0] });
+      last = m.index + m[0].length;
+    }
+    if (last < code.length) tokens.push({ t: 'code', v: code.slice(last) });
+    return tokens.map(tok => {
+      if (tok.t === 'str') return `<span class="js">${escHtml(tok.v)}</span>`;
+      let s = escHtml(tok.v);
+      s = s.replace(/\b(import|from|await|async|const|let|var|print|True|False|None)\b/g, '<span class="jk">$&</span>');
+      s = s.replace(/\b(\d+)\b/g, '<span class="jn">$1</span>');
+      s = s.replace(/(#[^\n]*)/g, '<span class="jz">$1</span>');
+      return s;
+    }).join('');
+  }
+
+  function toPyVal(val) {
+    if (val === null)           return 'None';
+    if (val === true)           return 'True';
+    if (val === false)          return 'False';
+    if (typeof val === 'string') return JSON.stringify(val);
+    if (typeof val === 'number') return String(val);
+    if (Array.isArray(val))     return '[' + val.map(toPyVal).join(', ') + ']';
+    return String(val);
+  }
+
+  function buildPython(method, path, body) {
+    const url = window.location.origin + path;
+    if (method === 'GET') {
+      return [
+        'import requests',
+        '',
+        'response = requests.get(',
+        `    "${url}",`,
+        `    headers={"Authorization": "Bearer ${partnerKey}"},`,
+        ')',
+        'print(response.json())',
+      ].join('\n');
+    }
+    const bodyLines = Object.entries(body)
+      .map(([k, v]) => `        ${JSON.stringify(k)}: ${toPyVal(v)},`)
+      .join('\n');
+    return [
+      'import requests',
+      '',
+      'response = requests.post(',
+      `    "${url}",`,
+      `    headers={"Authorization": "Bearer ${partnerKey}"},`,
+      '    json={',
+      bodyLines,
+      '    },',
+      ')',
+      'print(response.json())',
+    ].join('\n');
+  }
+
+  function buildJS(method, path, body) {
+    const url = window.location.origin + path;
+    if (method === 'GET') {
+      return [
+        `const response = await fetch("${url}", {`,
+        '  headers: {',
+        `    "Authorization": "Bearer ${partnerKey}",`,
+        '  },',
+        '});',
+        'const data = await response.json();',
+        'console.log(data);',
+      ].join('\n');
+    }
+    const bodyStr = JSON.stringify(body, null, 2)
+      .split('\n').map((l, i) => i === 0 ? l : '  ' + l).join('\n');
+    return [
+      `const response = await fetch("${url}", {`,
+      '  method: "POST",',
+      '  headers: {',
+      `    "Authorization": "Bearer ${partnerKey}",`,
+      '    "Content-Type": "application/json",',
+      '  },',
+      `  body: JSON.stringify(${bodyStr}),`,
+      '});',
+      'const data = await response.json();',
+      'console.log(data);',
+    ].join('\n');
+  }
+
+  function buildRequestView(tab) {
+    const req = lastRequest[tab];
+    if (!req) return `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">Submit a request to see code examples</div>
+      </div>`;
+
+    const paths = {
+      search:   '/v1/lodging/search',
+      property: `/v1/lodging/properties/${req.property_id}`,
+      quote:    '/v1/lodging/quote',
+      cars:     '/v1/cars/quote',
+      bundle:   '/v1/bundle/quote',
+    };
+    const methods = { search: 'POST', property: 'GET', quote: 'POST', cars: 'POST', bundle: 'POST' };
+    const method = methods[tab];
+    const path   = paths[tab];
+
+    const jsonLabel   = method === 'GET' ? 'URL Parameters' : 'Request Body (JSON)';
+    const jsonPayload = method === 'GET' ? { property_id: req.property_id } : req;
+
+    function codeBlock(label, content) {
+      return `
+        <div>
+          <div class="req-lang-label">${label}</div>
+          <div class="code-block-wrap">
+            <div class="json-view"><pre>${content}</pre></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+        </div>`;
+    }
+
+    return `<div class="req-sections">
+      ${codeBlock(jsonLabel,    highlight(JSON.stringify(jsonPayload, null, 2)))}
+      ${codeBlock('Python',     highlightCode(buildPython(method, path, req)))}
+      ${codeBlock('JavaScript', highlightCode(buildJS(method, path, req)))}
+    </div>`;
+  }
+
+  function copyCode(btn) {
+    const text = btn.closest('.code-block-wrap').querySelector('pre').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+
   // ── Render dispatcher ──────────────────────────────────────────────────────
   function renderResults(tab, data) {
     const id = tab + '-results';
     if (viewState[tab] === 'request') {
-      document.getElementById(id).innerHTML =
-        `<div class="json-view"><pre>${highlight(JSON.stringify(lastRequest[tab], null, 2))}</pre></div>`;
+      document.getElementById(id).innerHTML = buildRequestView(tab);
     } else if (viewState[tab] === 'json') {
       document.getElementById(id).innerHTML =
         `<div class="json-view"><pre>${highlight(JSON.stringify(data, null, 2))}</pre></div>`;
