@@ -39,6 +39,7 @@
     <div class="tab" onclick="switchTab('quote', this)">Hotel Quote</div>
     <div class="tab" onclick="switchTab('cars', this)">Car Quote</div>
     <div class="tab" onclick="switchTab('bundle', this)">Bundle Quote</div>
+    <div class="tab" onclick="switchTab('pnl', this)">P&amp;L Model</div>
     <div class="tab" onclick="switchTab('errors', this)">Error Responses</div>
   </div>
 
@@ -301,6 +302,39 @@
     </div>
   </div>
 
+  <!-- ── P&L Model ── -->
+  <div id="tab-pnl" class="tab-panel">
+    <div class="form-panel" style="margin-bottom:22px">
+      <div class="form-title">Volume Assumptions</div>
+      <table class="pnl-inputs-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Take rate</th>
+            <th>Bookings / month</th>
+            <th>Avg booking value (USD)</th>
+          </tr>
+        </thead>
+        <tbody id="pnl-inputs-body"></tbody>
+      </table>
+    </div>
+    <div class="results-panel">
+      <div class="results-header">
+        <span class="results-title">Marketplace P&amp;L</span>
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setView('pnl','visual',this)">Visual</button>
+          <button class="view-btn" onclick="setView('pnl','json',this)">JSON</button>
+        </div>
+      </div>
+      <div class="results-body" id="pnl-results">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div class="empty-text">Loading tier data…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Error Responses ── -->
   <div id="tab-errors" class="tab-panel">
     <div id="error-cards-container" class="error-cards"></div>
@@ -311,8 +345,8 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let partnerKey = '';
-  const viewState   = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual' };
-  const lastData    = { search: null, property: null, quote: null, cars: null, bundle: null };
+  const viewState   = { search: 'visual', property: 'visual', quote: 'visual', cars: 'visual', bundle: 'visual', pnl: 'visual' };
+  const lastData    = { search: null, property: null, quote: null, cars: null, bundle: null, pnl: null };
   const lastRequest = { search: null, property: null, quote: null, cars: null, bundle: null };
 
   let propertiesCache     = [];
@@ -327,6 +361,7 @@
     quote:    'Hotel_Quote_Navigate',
     cars:     'Car_Quote_Navigate',
     bundle:   'Bundle_Quote_Navigate',
+    pnl:      'PnL_Model_Navigate',
     errors:   'Error_Responses_Navigate',
   };
 
@@ -336,6 +371,7 @@
     quote:    'Hotel_Quote',
     cars:     'Car_Quote',
     bundle:   'Bundle_Quote',
+    pnl:      'PnL_Model',
   };
 
   const VIEW_LABEL = { visual: 'Visual', json: 'JSON', request: 'Request' };
@@ -503,7 +539,9 @@
     viewState[tab] = view;
     btn.closest('.view-toggle').querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    if (view === 'request') {
+    if (tab === 'pnl') {
+      renderPnL();
+    } else if (view === 'request') {
       document.getElementById(tab + '-results').innerHTML = buildRequestView(tab);
     } else if (lastData[tab]) {
       renderResults(tab, lastData[tab]);
@@ -919,6 +957,163 @@
       </div>`;
   }
 
+  // ── P&L Model ──────────────────────────────────────────────────────────────
+  const PNL_DEFAULTS = {
+    sandbox:    { bookings: 0,       avgVal: 0   },
+    self_serve: { bookings: 500,     avgVal: 250 },
+    standard:   { bookings: 2000,    avgVal: 300 },
+    growth:     { bookings: 15000,   avgVal: 350 },
+    enterprise: { bookings: 100000,  avgVal: 400 },
+  };
+
+  function fmtM(n) {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+    return `$${n.toFixed(0)}`;
+  }
+
+  function calcPnL() {
+    const rows = partnersCache.map(p => {
+      const isSandbox = p.tier === 'sandbox';
+      const takeRate  = isSandbox ? 0 : parseFloat(document.getElementById(`pnl-rate-${p.tier}`)?.value || p.take_rate * 100) / 100;
+      const bookings  = isSandbox ? 0 : parseInt(document.getElementById(`pnl-bookings-${p.tier}`)?.value || 0);
+      const avgVal    = isSandbox ? 0 : parseFloat(document.getElementById(`pnl-avgval-${p.tier}`)?.value  || 0);
+      const gbv       = bookings * avgVal;
+      const revenue   = Math.round(gbv * takeRate * 100) / 100;
+      return { key: p.key, tier: p.tier, name: p.name, take_rate: takeRate, bookings, avg_booking_value: avgVal, gbv, hts_revenue: revenue };
+    });
+    const totalGbv      = rows.reduce((s, r) => s + r.gbv, 0);
+    const totalRevenue  = rows.reduce((s, r) => s + r.hts_revenue, 0);
+    const totalBookings = rows.reduce((s, r) => s + r.bookings, 0);
+    return {
+      rows: rows.map(r => ({ ...r, revenue_share: totalRevenue > 0 ? Math.round(r.hts_revenue / totalRevenue * 1000) / 1000 : 0 })),
+      totals: { bookings: totalBookings, gbv: totalGbv, hts_revenue: totalRevenue },
+    };
+  }
+
+  function onPnLInput() {
+    renderPnL();
+    ga('PnL_Model_Input_Changed');
+  }
+
+  function renderPnLInputs() {
+    const tbody = document.getElementById('pnl-inputs-body');
+    if (!tbody || !partnersCache.length) return;
+    tbody.innerHTML = partnersCache.map(p => {
+      const def      = PNL_DEFAULTS[p.tier] || { bookings: 0, avgVal: 0 };
+      const isSandbox = p.tier === 'sandbox';
+      const badge    = TIER_BADGE[p.tier] || 'badge-standard';
+      const label    = TIER_LABEL[p.tier] || p.tier;
+      const rateCell = isSandbox
+        ? '<span class="pnl-sandbox-cell">Free</span>'
+        : `<div class="pnl-rate-wrap">
+             <input type="number" id="pnl-rate-${p.tier}" value="${(p.take_rate * 100).toFixed(1)}" min="0" max="100" step="0.1" oninput="onPnLInput()">
+             <span>%</span>
+           </div>`;
+      return `
+        <tr>
+          <td><span class="badge ${badge}">${label}</span></td>
+          <td>${rateCell}</td>
+          <td>${isSandbox
+            ? '<span class="pnl-sandbox-cell">n/a — mock data only</span>'
+            : `<input type="number" id="pnl-bookings-${p.tier}" value="${def.bookings}" min="0" step="100" oninput="onPnLInput()">`
+          }</td>
+          <td>${isSandbox
+            ? '<span class="pnl-sandbox-cell">—</span>'
+            : `<input type="number" id="pnl-avgval-${p.tier}" value="${def.avgVal}" min="0" step="10" oninput="onPnLInput()">`
+          }</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderPnL() {
+    const pnl = calcPnL();
+    lastData.pnl = pnl;
+
+    if (viewState.pnl === 'json') {
+      document.getElementById('pnl-results').innerHTML =
+        `<div class="json-view"><pre>${highlight(JSON.stringify(pnl, null, 2))}</pre></div>`;
+      return;
+    }
+
+    const maxRev = Math.max(...pnl.rows.map(r => r.hts_revenue));
+
+    const tableRows = pnl.rows.map(r => {
+      const isTop   = r.hts_revenue === maxRev && r.hts_revenue > 0;
+      const badge   = TIER_BADGE[r.tier] || 'badge-standard';
+      const label   = TIER_LABEL[r.tier] || r.tier;
+      const ratePct = r.take_rate === 0 ? 'Free' : `${(r.take_rate * 100).toFixed(1)}%`;
+      const pct     = (r.revenue_share * 100).toFixed(1);
+      const barW    = maxRev > 0 ? Math.round(r.hts_revenue / maxRev * 100) : 0;
+      return `
+        <tr${isTop ? ' class="pnl-top-row"' : ''}>
+          <td><span class="badge ${badge}">${label}</span></td>
+          <td>${ratePct}</td>
+          <td>${r.bookings.toLocaleString()}</td>
+          <td>${r.avg_booking_value > 0 ? fmtM(r.avg_booking_value) : '—'}</td>
+          <td>${r.gbv > 0 ? fmtM(r.gbv) : '—'}</td>
+          <td style="font-weight:600">${r.hts_revenue > 0 ? fmtM(r.hts_revenue) : '—'}</td>
+          <td>
+            <div class="rev-bar-wrap">
+              <div class="rev-bar-track"><div class="rev-bar-fill" style="width:${barW}%"></div></div>
+              <span class="rev-bar-pct">${r.hts_revenue > 0 ? pct + '%' : '—'}</span>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    const totalRow = `
+      <tr class="pnl-total-row">
+        <td colspan="2">Total</td>
+        <td>${pnl.totals.bookings.toLocaleString()}</td>
+        <td>—</td>
+        <td>${pnl.totals.gbv > 0 ? fmtM(pnl.totals.gbv) : '—'}</td>
+        <td>${pnl.totals.hts_revenue > 0 ? fmtM(pnl.totals.hts_revenue) : '—'}</td>
+        <td><span class="rev-bar-pct">100%</span></td>
+      </tr>`;
+
+    // Rate-flip callout: highest-revenue tier vs lowest non-sandbox tier with revenue
+    const topTier = pnl.rows.reduce((a, b) => b.hts_revenue > a.hts_revenue ? b : a, pnl.rows[0]);
+    const candidates = pnl.rows.filter(r => r.tier !== 'sandbox' && r.hts_revenue > 0 && r.tier !== topTier.tier);
+    const botTier = candidates.length
+      ? candidates.reduce((a, b) => b.hts_revenue < a.hts_revenue ? b : a)
+      : null;
+
+    let callout = '';
+    if (botTier && topTier.hts_revenue > 0 && topTier.tier !== botTier.tier) {
+      const mult   = Math.round(topTier.hts_revenue / botTier.hts_revenue);
+      const topLbl = TIER_LABEL[topTier.tier] || topTier.tier;
+      const botLbl = TIER_LABEL[botTier.tier] || botTier.tier;
+      const topPct = (topTier.take_rate * 100).toFixed(1);
+      const botPct = (botTier.take_rate  * 100).toFixed(1);
+      const ppDiff = ((botTier.take_rate - topTier.take_rate) * 100).toFixed(1);
+      callout = `
+        <div class="rate-flip-callout">
+          <strong>${topLbl} (${topPct}% take rate)</strong> generates <strong>${mult.toLocaleString()}×</strong> more monthly
+          HTS revenue than <strong>${botLbl} (${botPct}%)</strong>, despite a <strong>${ppDiff} percentage point lower take
+          rate</strong>. A lower rate on a high-volume partner produces far more absolute revenue than a higher rate on a
+          low-volume one — the core commercial case for investing in enterprise partnerships and negotiating custom rates.
+        </div>`;
+    }
+
+    document.getElementById('pnl-results').innerHTML = `
+      <table class="pnl-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Take rate</th>
+            <th>Bookings / mo</th>
+            <th>Avg value</th>
+            <th>GBV / mo</th>
+            <th>HTS Revenue / mo</th>
+            <th>% of platform</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}${totalRow}</tbody>
+      </table>
+      ${callout}`;
+  }
+
   // ── Error response scenarios ───────────────────────────────────────────────
   const ERROR_SCENARIOS = [
     {
@@ -1143,6 +1338,10 @@
       loadProperties();
       loadHopperProducts();
       loadCars();
+
+      // Populate P&L inputs and initial calculation
+      renderPnLInputs();
+      renderPnL();
     } catch (e) { console.error('Failed to load partners:', e); }
   }
 
