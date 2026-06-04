@@ -56,7 +56,7 @@ PARTNERS = {
         "tier": "enterprise",
         "take_rate": 0.035,
         "model": "platform_plus_variable",
-        "description": "Annual committed GBV · Custom packaging · Dedicated AM",
+        "description": "Annual committed GBV · Custom agreement · Dedicated AM",
     },
 }
 

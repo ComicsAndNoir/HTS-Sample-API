@@ -424,6 +424,17 @@ input:focus, select:focus { border-color: #63b3ed; box-shadow: 0 0 0 3px rgba(99
   border-bottom: none;
 }
 .price-row.hts-row span:last-child { font-weight: 600; }
+.price-row.hts-row-total {
+  color: #718096;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0 4px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 2px;
+  border-bottom: none;
+}
+
+.rate-label { font-size: 11px; color: #a0aec0; font-weight: 400; }
 
 /* Hopper products section */
 .hopper-section {

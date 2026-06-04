@@ -717,6 +717,15 @@
   function fmt(board) { return board.replace(/_/g, ' '); }
   function sym(currency) { return currency === 'USD' ? '$' : '€'; }
 
+  function hopperFeeLabel(pid) {
+    const prod = hopperProductsCache.find(p => p.product_id === pid);
+    if (!prod) return '';
+    if (prod.fee_type === 'pct_of_net')   return `${(prod.fee_value * 100).toFixed(0)}% of net`;
+    if (prod.fee_type === 'flat')          return `$${prod.fee_value.toFixed(2)} flat fee`;
+    if (prod.fee_type === 'flat_per_day')  return `$${prod.fee_value.toFixed(2)}/day`;
+    return '';
+  }
+
   // ── Search visual ──────────────────────────────────────────────────────────
   function renderSearch(id, data) {
     if (!data.results?.length) {
@@ -795,10 +804,11 @@
     const pct = (data._marketplace.take_rate * 100).toFixed(1);
     const s   = sym(data.currency);
 
-    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) => {
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([pid, p]) => {
+      const rateLabel = hopperFeeLabel(pid);
       const noteHtml = p.note
         ? `<div style="font-size:11px;color:#718096;margin-top:2px">↑ ${p.note}</div>` : '';
-      return `<div class="price-row hopper-row"><span>${p.name}${noteHtml}</span><span>${s}${p.fee.toFixed(2)}</span></div>`;
+      return `<div class="price-row hopper-row"><span>${p.name}<span class="rate-label"> · ${rateLabel}</span>${noteHtml}</span><span>${s}${p.fee.toFixed(2)}</span></div>`;
     }).join('');
     const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
 
@@ -811,9 +821,9 @@
         <div class="price-row"><span>City tax</span><span>${s}${b.city_tax.toFixed(2)}</span></div>
         ${hopperSection}
         <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
-        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="hts-revenue-divider">HTS Revenue · absorbed by partner, not charged to customer</div>
         <div class="price-row hts-row">
-          <span>Marketplace take (${pct}% of GBV)</span>
+          <span>Lodging take (${pct}% of supplier net)</span>
           <span>${s}${b.marketplace_take.toFixed(2)}</span>
         </div>
         ${mkBlock(data._marketplace)}
@@ -826,9 +836,10 @@
     const pct = (data._marketplace.take_rate * 100).toFixed(1);
     const s   = '$';
 
-    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) =>
-      `<div class="price-row hopper-row"><span>${p.name}</span><span>${s}${p.fee.toFixed(2)}</span></div>`
-    ).join('');
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([pid, p]) => {
+      const rateLabel = hopperFeeLabel(pid);
+      return `<div class="price-row hopper-row"><span>${p.name}<span class="rate-label"> · ${rateLabel}</span></span><span>${s}${p.fee.toFixed(2)}</span></div>`;
+    }).join('');
     const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
 
     document.getElementById(id).innerHTML = `
@@ -842,9 +853,9 @@
         <div class="price-row"><span>VAT</span><span>${s}${b.vat.toFixed(2)}</span></div>
         ${hopperSection}
         <div class="price-row total"><span>Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
-        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="hts-revenue-divider">HTS Revenue · absorbed by partner, not charged to customer</div>
         <div class="price-row hts-row">
-          <span>Marketplace take (${pct}% of GBV — absorbed by partner, not charged to customer)</span>
+          <span>Car rental take (${pct}% of supplier net)</span>
           <span>${s}${b.marketplace_take.toFixed(2)}</span>
         </div>
         ${mkBlock(data._marketplace)}
@@ -857,10 +868,14 @@
     const pct = (data._marketplace.take_rate * 100).toFixed(1);
     const s   = '$';
 
-    const hopperRows = Object.entries(b.hopper_products || {}).map(([, p]) =>
-      `<div class="price-row hopper-row"><span>${p.name}</span><span>${s}${p.fee.toFixed(2)}</span></div>`
-    ).join('');
+    const hopperRows = Object.entries(b.hopper_products || {}).map(([pid, p]) => {
+      const rateLabel = hopperFeeLabel(pid);
+      return `<div class="price-row hopper-row"><span>${p.name}<span class="rate-label"> · ${rateLabel}</span></span><span>${s}${p.fee.toFixed(2)}</span></div>`;
+    }).join('');
     const hopperSection = hopperRows ? `<div class="hopper-divider">Hopper</div>${hopperRows}` : '';
+
+    const hotelTake = Math.round(b.hotel.supplier_net * data._marketplace.take_rate * 100) / 100;
+    const carTake   = Math.round(b.car.supplier_net   * data._marketplace.take_rate * 100) / 100;
 
     document.getElementById(id).innerHTML = `
       <div class="bundle-card">
@@ -887,9 +902,17 @@
         </div>
         ${hopperSection}
         <div class="price-row total"><span>Bundle Total</span><span>${s}${b.sell_price.toFixed(2)}</span></div>
-        <div class="hts-revenue-divider">HTS Revenue</div>
+        <div class="hts-revenue-divider">HTS Revenue · absorbed by partner, not charged to customer</div>
         <div class="price-row hts-row">
-          <span>Marketplace take (${pct}% of combined GBV — absorbed by partner, not charged to customer)</span>
+          <span>Lodging take (${pct}% of supplier net)</span>
+          <span>${s}${hotelTake.toFixed(2)}</span>
+        </div>
+        <div class="price-row hts-row">
+          <span>Car rental take (${pct}% of supplier net)</span>
+          <span>${s}${carTake.toFixed(2)}</span>
+        </div>
+        <div class="price-row hts-row-total">
+          <span>Total marketplace take</span>
           <span>${s}${b.bundle_marketplace_take.toFixed(2)}</span>
         </div>
         ${mkBlock(data._marketplace)}
